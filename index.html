@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>La Isla de Plástico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: una sola columna de lectura (~68ch) que baja como una inmersión: superficie → fondo; cada tema = explicación + "Dicho de forma sencilla" + interactivo + mini test */
+:root{
+  --bg:#eef5f4;          /* espuma */
+  --surface:#ffffff;
+  --surface-2:#dfeceb;
+  --fg:#0c2733;          /* abisal */
+  --muted:#4d6670;
+  --sea:#0d6d7c;         /* agua */
+  --sea-soft:#cfe6e7;
+  --buoy:#e8901f;        /* naranja boya */
+  --buoy-soft:#fbe8cc;
+  --ok:#21825a; --ok-soft:#d6efe3;
+  --bad:#c8432e; --bad-soft:#f8dcd6;
+  --line:#c3d6d6;
+  --hero-a:#0c3b4a; --hero-b:#0a2430; --hero-fg:#eaf6f6;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#071a21;--surface:#0e2731;--surface-2:#123341;--fg:#dcecee;--muted:#93adb4;
+  --sea:#4cc0c9;--sea-soft:#123f48;--buoy:#f3a640;--buoy-soft:#3a2a12;
+  --ok:#5ccf98;--ok-soft:#123a2a;--bad:#f27b66;--bad-soft:#40201a;--line:#1f4350;
+  --hero-a:#0a3140;--hero-b:#04121a;--hero-fg:#eaf6f6;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#071a21;--surface:#0e2731;--surface-2:#123341;--fg:#dcecee;--muted:#93adb4;
+  --sea:#4cc0c9;--sea-soft:#123f48;--buoy:#f3a640;--buoy-soft:#3a2a12;
+  --ok:#5ccf98;--ok-soft:#123a2a;--bad:#f27b66;--bad-soft:#40201a;--line:#1f4350;
+  --hero-a:#0a3140;--hero-b:#04121a;--hero-fg:#eaf6f6;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:17px;line-height:1.6}
+.wrap{max-width:780px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.1;margin:0}
+p{margin:0}
+strong{font-weight:700}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--buoy);outline-offset:2px;border-radius:6px}
+
+/* HERO */
+.hero{position:relative;background:radial-gradient(120% 90% at 50% 40%,var(--hero-a),var(--hero-b));color:var(--hero-fg);overflow:hidden}
+.hero canvas{position:absolute;inset:0;width:100%;height:100%}
+.hero .wrap{position:relative;padding-block:64px 56px;display:grid;gap:18px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.8}
+.hero h1{font-size:clamp(40px,8vw,76px);font-weight:800;letter-spacing:-.02em}
+.hero h1 span{color:var(--buoy)}
+.hero p.lead{font-size:19px;max-width:56ch;opacity:.92}
+.hero-stats{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:6px}
+.hero-stats div{display:grid}
+.hero-stats b{font-family:var(--f-mono);font-size:26px;color:var(--buoy)}
+.hero-stats small{font-size:13px;opacity:.8}
+
+/* NAV */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+.nav .wrap{display:flex;align-items:center;gap:12px;padding-block:10px}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;width:34px;height:34px;border-radius:50%;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center;font-family:var(--f-mono);font-size:13px;font-weight:700;text-decoration:none;color:var(--fg)}
+.chip.done{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.chip.partial{border-color:var(--buoy)}
+.score{flex:none;font-family:var(--f-mono);font-size:14px;background:var(--fg);color:var(--bg);padding:6px 12px;border-radius:999px}
+
+/* SECCIONES */
+main{display:grid;gap:0}
+section.topic{padding-block:56px 8px;scroll-margin-top:70px}
+.topic-head{display:grid;gap:8px;margin-bottom:20px}
+.num{font-family:var(--f-mono);font-size:13px;color:var(--sea);letter-spacing:.1em}
+.topic h2{font-size:clamp(28px,5vw,40px);font-weight:700;letter-spacing:-.01em}
+.body{display:grid;gap:14px}
+.body ul{margin:0;padding-left:1.2em;display:grid;gap:6px}
+.hl{background:var(--buoy-soft);padding:0 .25em;border-radius:4px}
+
+.easy{border-left:5px solid var(--sea);background:var(--sea-soft);padding:14px 18px;border-radius:0 var(--r) var(--r) 0;display:grid;gap:6px}
+.easy .tag{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--sea);font-weight:700}
+
+.term{border-bottom:2px dotted var(--sea);cursor:help;position:relative}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;display:grid;gap:14px}
+.panel h3{font-size:20px}
+.panel .hint{font-size:14px;color:var(--muted)}
+
+/* Mito/realidad */
+.flips{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.flip{background:var(--surface-2);border:2px solid transparent;border-radius:12px;padding:16px;text-align:left;display:grid;gap:8px;min-height:150px;align-content:start}
+.flip .q{font-weight:700}
+.flip .badge{font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;font-weight:700;justify-self:start;padding:2px 8px;border-radius:999px;background:var(--surface);color:var(--muted)}
+.flip .a{display:none;font-size:15px}
+.flip.open .a{display:block}
+.flip.open.myth{border-color:var(--bad)}
+.flip.open.myth .badge{background:var(--bad);color:var(--surface)}
+.flip.open.real{border-color:var(--ok)}
+.flip.open.real .badge{background:var(--ok);color:var(--surface)}
+
+/* barras */
+.bar{height:34px;border-radius:8px;overflow:hidden;display:flex;font-family:var(--f-mono);font-size:13px;font-weight:700}
+.bar > div{display:flex;align-items:center;padding:0 10px;white-space:nowrap;color:var(--surface)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--muted)}
+
+/* mapa giros */
+.map{overflow-x:auto}
+.map svg{width:100%;min-width:560px;height:auto;display:block}
+.gyre{cursor:pointer}
+.gyre .spin{transform-box:fill-box;transform-origin:center;animation:cw 14s linear infinite}
+.gyre.south .spin{animation-name:ccw}
+@keyframes cw{to{transform:rotate(360deg)}}
+@keyframes ccw{to{transform:rotate(-360deg)}}
+.gyre:hover .ring,.gyre.sel .ring{stroke-width:4}
+.gyre-info{background:var(--surface-2);border-radius:10px;padding:12px 14px;font-size:15px;min-height:52px}
+
+/* fotodegradación */
+.slider-row{display:grid;gap:8px}
+input[type=range]{width:100%;accent-color:var(--buoy)}
+.deg-canvas{width:100%;height:200px;border-radius:10px;background:var(--surface-2);display:block}
+.deg-read{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:15px}
+.deg-read b{font-family:var(--f-mono)}
+
+/* cadena trófica */
+.chain{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.link{background:var(--surface-2);border:2px solid var(--line);border-radius:12px;padding:12px 8px;text-align:center;display:grid;gap:6px;justify-items:center;font-size:14px}
+.link svg{width:44px;height:44px}
+.link .dots{font-family:var(--f-mono);font-size:12px;color:var(--bad);min-height:1.2em}
+.link.on{border-color:var(--bad);background:var(--bad-soft)}
+.chain-txt{font-size:15px;min-height:48px}
+
+.cards3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.card{background:var(--surface-2);border-radius:12px;padding:14px;display:grid;gap:6px;align-content:start}
+.card h4{margin:0;font-family:var(--f-display);font-size:17px}
+.card p{font-size:15px}
+.big{font-family:var(--f-mono);font-size:30px;font-weight:700;color:var(--buoy);line-height:1}
+
+/* 2050 */
+.calc{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;text-align:center}
+.calc .card{justify-items:center}
+
+/* actores */
+.who{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+
+/* compromiso */
+.check{display:flex;gap:12px;align-items:flex-start;background:var(--surface-2);border-radius:10px;padding:12px 14px;cursor:pointer}
+.check input{width:22px;height:22px;accent-color:var(--ok);flex:none;margin-top:2px}
+.check small{display:block;color:var(--muted);font-size:14px}
+
+/* MINI TEST */
+.quiz{margin-top:22px;border:2px solid var(--fg);border-radius:var(--r);overflow:hidden;background:var(--surface)}
+.quiz-head{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--fg);color:var(--bg);padding:10px 16px}
+.quiz-head h3{font-size:18px}
+.quiz-head .mono{font-size:14px}
+.qs{display:grid}
+.q{padding:16px;display:grid;gap:10px;border-top:1px solid var(--line)}
+.q:first-child{border-top:0}
+.q p.stem{font-weight:700}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;background:var(--surface-2);border:2px solid transparent;border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start}
+.opt .l{font-family:var(--f-mono);font-weight:700;color:var(--sea);flex:none}
+.opt:hover:not([disabled]){border-color:var(--sea)}
+.opt[disabled]{cursor:default}
+.opt.right{background:var(--ok-soft);border-color:var(--ok)}
+.opt.wrong{background:var(--bad-soft);border-color:var(--bad)}
+.fb{font-size:15px;padding:10px 12px;border-radius:10px}
+.fb.ok{background:var(--ok-soft)}
+.fb.ko{background:var(--bad-soft)}
+.fb b{display:block}
+.retry{justify-self:end;margin:0 16px 16px;background:none;border:2px solid var(--line);border-radius:999px;padding:6px 14px;font-size:14px}
+
+/* FINAL */
+.final{margin-block:64px 72px;background:var(--fg);color:var(--bg);border-radius:20px;padding:28px;display:grid;gap:14px;text-align:center;justify-items:center}
+.final .big{font-size:56px}
+.final p{max-width:46ch}
+.final button{background:var(--buoy);color:#1a1205;border:0;border-radius:999px;padding:10px 20px;font-weight:700}
+footer{font-size:13px;color:var(--muted);padding-block:0 40px;text-align:center}
+
+@media (max-width:560px){
+  body{font-size:16px}
+  .chain{grid-template-columns:repeat(2,1fr)}
+  .hero .wrap{padding-block:44px 40px}
+}
+@media (prefers-reduced-motion:reduce){
+  .gyre .spin{animation:none}
+  html{scroll-behavior:auto}
+}
+html{scroll-behavior:smooth}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <canvas id="heroCanvas" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div class="eyebrow">Tecnología y Digitalización · Medio ambiente</div>
+    <h1>La Isla de Plástico:<br><span>realidad y mito</span></h1>
+    <p class="lead">No sale en los mapas, no tiene arena ni palmeras y no puedes caminar por ella. Aun así existe, es enorme y nos afecta. Lee cada apartado, toca los elementos interactivos y comprueba lo que has aprendido con los mini tests.</p>
+    <div class="hero-stats">
+      <div><b>94 %</b><small>son microplásticos</small></div>
+      <div><b>+200.000</b><small>fragmentos por km²</small></div>
+      <div><b>450 años</b><small>tarda en degradarse</small></div>
+    </div>
+  </div>
+</header>
+
+<nav class="nav" aria-label="Apartados">
+  <div class="wrap">
+    <div class="chips" id="chips"></div>
+    <div class="score" id="score" aria-live="polite">0/30</div>
+  </div>
+</nav>
+
+<main class="wrap" id="main">
+
+<!-- 1 -->
+<section class="topic" id="t1" data-title="¿Qué es?">
+  <div class="topic-head"><span class="num">APARTADO 1</span><h2>¿Qué es realmente la «Isla de Plástico»?</h2></div>
+  <div class="body">
+    <p>Su nombre oficial es la <strong>Gran Mancha de Basura del Pacífico</strong>. Se la conoce como «Isla de Plástico», pero el nombre engaña y ha creado muchos malentendidos.</p>
+    <ul>
+      <li><strong>No es una isla sólida.</strong> No se puede caminar sobre ella ni se ve desde el espacio. Es más correcto llamarla <span class="hl">«sopa de plástico»</span>: una zona enorme del océano donde el plástico flotante se concentra en cantidades altísimas, pero disperso en el agua.</li>
+      <li>El <strong>94 % de las partículas son <span class="term" title="Trozos de plástico de menos de 5 mm">microplásticos</span></strong>, trozos de menos de 5 mm.</li>
+      <li>Hay más de <strong>200.000 fragmentos por km²</strong>, y en algunas zonas se llega al millón.</li>
+      <li>Si juntáramos todo ese plástico, ocuparía unos <strong>1.600 km²</strong> (parecido a la isla de Gran Canaria). La zona con niveles altos de plástico es muchísimo mayor: se calcula en torno a <strong>1,6 millones de km²</strong>, unas tres veces España.</li>
+    </ul>
+    <div class="easy">
+      <span class="tag">Dicho de forma sencilla</span>
+      <p>Imagina que echas un puñado de confeti en la piscina del polideportivo. No forma una «alfombra» por la que puedas andar: se reparte por toda el agua. Desde el bordillo casi no lo ves, pero si metes la mano sacas trocitos por todas partes. Eso es la isla de plástico, a escala océano.</p>
+    </div>
+    <p><strong>El mito de las imágenes falsas.</strong> Muchas fotos que circulan por redes son engañosas. La de montañas de botellas y bolsas en el agua se tomó en un <strong>estuario de Manila (Filipinas)</strong>, no en mitad del océano. La de barquitas navegando entre basura es de un <strong>río de Indonesia</strong>. Esta desinformación es peligrosa porque hace pensar «si es tan grande, ¿qué voy a hacer yo?». La realidad es menos espectacular, pero igual de alarmante.</p>
+    <div class="panel">
+      <h3>¿Mito o realidad?</h3>
+      <p class="hint">Piensa tu respuesta y toca cada tarjeta para comprobarla.</p>
+      <div class="flips">
+        <button class="flip myth" type="button"><span class="badge">¿?</span><span class="q">«Desde un satélite se ve una mancha enorme de basura».</span><span class="a">Mito. La mayoría del plástico son trocitos de menos de 5 mm dispersos en el agua: no forman una mancha visible desde el espacio.</span></button>
+        <button class="flip real" type="button"><span class="badge">¿?</span><span class="q">«Casi todo lo que flota allí son trozos más pequeños que una lenteja».</span><span class="a">Realidad. El 94 % de las partículas son microplásticos (menos de 5 mm).</span></button>
+        <button class="flip myth" type="button"><span class="badge">¿?</span><span class="q">«La foto viral de botellas amontonadas es de la isla del Pacífico».</span><span class="a">Mito. Esa foto es de un estuario de Manila, en Filipinas, junto a la costa.</span></button>
+      </div>
+    </div>
+  </div>
+  <div class="quiz" data-quiz="1"></div>
+</section>
+
+<!-- 2 -->
+<section class="topic" id="t2" data-title="¿Dónde?">
+  <div class="topic-head"><span class="num">APARTADO 2</span><h2>¿Dónde están estas acumulaciones?</h2></div>
+  <div class="body">
+    <p>La Gran Mancha del Pacífico Norte es la más famosa, pero <strong>no es la única</strong>. Hay acumulaciones parecidas en los otros cuatro grandes <span class="term" title="Sistema enorme de corrientes marinas que gira como un remolino">giros oceánicos</span>: Atlántico Norte, Atlántico Sur, océano Índico y Pacífico Sur. Son menos conocidas porque son más pequeñas o se han estudiado menos, pero dejan claro que <strong>el problema es global</strong>.</p>
+    <div class="panel">
+      <h3>Los 5 giros oceánicos</h3>
+      <p class="hint">Toca cada remolino. Fíjate en el sentido de giro: en el hemisferio norte giran como las agujas del reloj y en el sur, al revés.</p>
+      <div class="map">
+        <svg viewBox="0 0 800 400" role="img" aria-label="Esquema de los cinco giros oceánicos">
+          <rect x="0" y="0" width="800" height="400" rx="12" fill="var(--sea-soft)"/>
+          <line x1="0" y1="215" x2="800" y2="215" stroke="var(--muted)" stroke-dasharray="6 6" stroke-width="1.5"/>
+          <text x="790" y="208" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="12" fill="var(--muted)">ECUADOR</text>
+          <g font-family="JetBrains Mono, monospace" font-size="13" font-weight="700" fill="var(--muted)" letter-spacing="2" opacity=".8">
+            <text x="22" y="250">ÁFRICA</text>
+            <text x="150" y="80">ASIA</text>
+            <text x="250" y="330">OCEANÍA</text>
+            <text x="560" y="110">AMÉRICA</text>
+            <text x="560" y="128">DEL NORTE</text>
+            <text x="580" y="320">AMÉRICA</text>
+            <text x="580" y="338">DEL SUR</text>
+          </g>
+          <g id="gyres"></g>
+          <text x="790" y="390" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">Esquema simplificado, no a escala</text>
+        </svg>
+      </div>
+      <div class="gyre-info" id="gyreInfo" aria-live="polite">Toca un giro para ver su información.</div>
+    </div>
+    <p><strong>¿Por qué hay justo cinco?</strong> Cada giro se forma por la suma de tres factores:</p>
+    <ul>
+      <li><strong>Los vientos.</strong> Los vientos dominantes soplan siempre en la misma dirección sobre el océano (los <span class="term" title="Vientos constantes que soplan hacia el ecuador desde el este">alisios</span> cerca del ecuador y los del oeste más al norte y al sur) y arrastran el agua de la superficie.</li>
+      <li><strong>La rotación de la Tierra.</strong> Al girar el planeta, las corrientes se desvían: hacia la derecha en el hemisferio norte y hacia la izquierda en el sur. Es el <span class="term" title="Desvío que sufre cualquier cosa que se mueve sobre la Tierra por culpa de su rotación">efecto Coriolis</span>. Por eso los giros del norte rotan como las agujas del reloj y los del sur, al revés.</li>
+      <li><strong>Los continentes.</strong> Hacen de «paredes» que cierran cada océano y obligan al agua a dar la vuelta, formando un circuito cerrado.</li>
+    </ul>
+    <p>El resultado es <strong>un giro por cada gran cuenca oceánica y hemisferio</strong>: el Pacífico y el Atlántico son tan grandes que tienen uno en el norte y otro en el sur (4 giros). El Índico está casi entero en el hemisferio sur, así que solo tiene uno. 2 + 2 + 1 = <strong>5 giros</strong>.</p>
+    <div class="easy">
+      <span class="tag">Dicho de forma sencilla</span>
+      <p>Remueve el Cola Cao con la cuchara y el líquido gira pegado a las paredes de la taza. En el océano, la «cuchara» es el viento, la «taza» son los continentes y la rotación de la Tierra decide hacia qué lado gira. Hay cinco «tazas» grandes, así que hay cinco remolinos.</p>
+    </div>
+  </div>
+  <div class="quiz" data-quiz="2"></div>
+</section>
+
+<!-- 3 -->
+<section class="topic" id="t3" data-title="¿Cómo se forma?">
+  <div class="topic-head"><span class="num">APARTADO 3</span><h2>¿De qué está hecha esta «sopa» y cómo se forma?</h2></div>
+  <div class="body">
+    <p><strong>Origen de los plásticos.</strong> Casi todo viene de lo que hacemos cada día:</p>
+    <div class="bar" role="img" aria-label="80 % fuentes terrestres, 20 % actividad marítima">
+      <div style="width:80%;background:var(--sea)">80 % tierra</div>
+      <div style="width:20%;background:var(--buoy);color:#1a1205">20 % mar</div>
+    </div>
+    <div class="legend"><span><strong>Tierra:</strong> botellas, bolsas y envases que llegan por ríos, alcantarillas o vertederos mal gestionados.</span><span><strong>Mar:</strong> redes de pesca abandonadas y otros desechos.</span></div>
+    <div class="panel">
+      <h3>¿Cómo llega el plástico al mar? Ejemplos reales</h3>
+      <div class="cards3">
+        <div class="card"><h4>Desde tierra</h4><p>• Una bolsa que se escapa de una papelera llena y el viento la lleva hasta un río.<br>• Toallitas y bastoncillos tirados al váter que la depuradora no logra filtrar.<br>• Las microfibras de la ropa de poliéster que se sueltan en la lavadora y viajan por el desagüe.<br>• La lluvia arrastra envases de la calle a las alcantarillas, y de ahí al río.<br>• Vertederos sin control junto a ríos o costas.<br>• Basura que se deja en la playa después de un día de verano.</p></div>
+        <div class="card"><h4>Desde el mar</h4><p>• Redes de pesca rotas o abandonadas (redes fantasma).<br>• Cabos, boyas y cajas de pescado que caen de los barcos.<br>• Contenedores que se pierden en temporales desde buques de carga.<br>• Basura que se tira por la borda desde barcos o cruceros.</p></div>
+      </div>
+    </div>
+    <p>Los países asiáticos son los que más aportan, pero los residuos viajan miles de kilómetros. Una botella comprada en Madrid puede tardar <strong>6 años</strong> en llegar al Atlántico y, desde allí, recorrer <strong>11.000 km</strong> hasta el giro del Pacífico.</p>
+    <p><strong>El papel de las corrientes.</strong> En el Pacífico Norte las corrientes forman un giro gigante que rota en el sentido de las agujas del reloj. Funciona como una <strong>cinta transportadora</strong> que atrapa todo lo que flota durante años o décadas.</p>
+    <div class="easy">
+      <span class="tag">Dicho de forma sencilla</span>
+      <p>Cuando quitas el tapón de la bañera y se forma un remolino, los trocitos de espuma acaban todos girando en el centro. Los giros oceánicos hacen lo mismo con el plástico, pero el «remolino» mide miles de kilómetros y no tiene desagüe: lo que entra, se queda.</p>
+    </div>
+    <p><strong>La fotodegradación.</strong> Plásticos como el <span class="term" title="Tereftalato de polietileno: el plástico de las botellas de agua y refrescos">PET</span> o el <span class="term" title="El plástico más común: bolsas, film transparente, tapones">polietileno</span> <strong>no se biodegradan</strong>: ningún ser vivo es capaz de descomponerlos. Lo que les pasa es que los <strong>rayos UV del sol</strong> los rompen en trozos cada vez más pequeños, pero <strong>nunca los hacen desaparecer</strong>. Tardan unos 450 años en degradarse y, mientras tanto, se convierten en microplásticos, que son mucho más peligrosos. No es lo mismo recoger una botella que miles de partículas invisibles.</p>
+    <div class="panel">
+      <h3>¿Por qué un microplástico es peor que una botella entera?</h3>
+      <ul style="margin:0;padding-left:1.2em;display:grid;gap:6px">
+        <li><strong>Es imposible recogerlo.</strong> Una botella se ve y se saca del agua con una red. Millones de trocitos de menos de 5 mm, muchos invisibles, no se pueden filtrar de todo un océano.</li>
+        <li><strong>Lo come cualquier animal.</strong> Una botella entera no cabe en la boca de casi ningún pez; un microplástico lo traga hasta el plancton, y así entra en toda la cadena alimentaria (lo verás en el apartado 4).</li>
+        <li><strong>Atrae tóxicos.</strong> Cuanto más pequeños son los trozos, más superficie tienen en total, y esa superficie funciona como una esponja que absorbe sustancias tóxicas como el DDT y los PCB.</li>
+        <li><strong>Llega a todas partes.</strong> Al ser tan ligero, viaja con las corrientes por todo el planeta y aparece incluso en el agua del grifo.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Simulador: una botella en el océano</h3>
+      <p class="hint">Mueve el control para ver qué le pasa a una botella con los años. Es una simulación aproximada.</p>
+      <div class="slider-row">
+        <label for="degYears">Años en el mar: <b class="mono" id="degY">0</b></label>
+        <input type="range" id="degYears" min="0" max="450" step="5" value="0">
+      </div>
+      <canvas class="deg-canvas" id="degCanvas" aria-label="Fragmentos de la botella"></canvas>
+      <div class="deg-read"><span>Trozos: <b id="degN">1</b></span><span>Tamaño aproximado: <b id="degS">25 cm</b></span><span id="degTag"></span></div>
+    </div>
+  </div>
+  <div class="quiz" data-quiz="3"></div>
+</section>
+
+<!-- 4 -->
+<section class="topic" id="t4" data-title="Consecuencias">
+  <div class="topic-head"><span class="num">APARTADO 4</span><h2>Consecuencias devastadoras</h2></div>
+  <div class="body">
+    <p>Los efectos sobre los animales marinos son variados y muchas veces mortales:</p>
+    <div class="cards3">
+      <div class="card"><h4>Ingestión</h4><p>Las tortugas confunden las bolsas con medusas. Ballenas y aves tragan fragmentos que les obstruyen el intestino y mueren de hambre. El <strong>34 %</strong> de las tortugas muertas en el Pacífico tienen plástico en el estómago.</p></div>
+      <div class="card"><h4>Estrangulamiento</h4><p>Las <strong>redes fantasma</strong> (redes de pesca abandonadas), las anillas de las latas y otros restos atrapan focas, delfines y aves, que se ahogan o quedan heridos.</p></div>
+      <div class="card"><h4>Bioacumulación</h4><p>El plancton se come los microplásticos y estos van subiendo por la <span class="term" title="Quién se come a quién en un ecosistema">cadena trófica</span> hasta llegar a nuestro plato.</p></div>
+    </div>
+    <div class="panel">
+      <h3>El viaje del microplástico hasta ti</h3>
+      <p class="hint">Toca cada eslabón en orden.</p>
+      <div class="chain" id="chain"></div>
+      <p class="chain-txt" id="chainTxt" aria-live="polite">Empieza por el plancton.</p>
+    </div>
+    <div class="easy">
+      <span class="tag">Dicho de forma sencilla</span>
+      <p>Piensa en un «pásalo» al revés: cada animal se come a muchos del eslabón anterior y se queda con todo su plástico. Un atún que ha comido cientos de peces pequeños acumula el plástico de todos ellos. Por eso se llama <strong>bioacumulación</strong>: la cantidad crece al subir por la cadena.</p>
+    </div>
+    <p>Un estudio encontró plástico en el <strong>83 % de las muestras de agua del grifo</strong> analizadas en todo el mundo. Además, los microplásticos funcionan como esponjas: absorben tóxicos como el <span class="term" title="Un insecticida prohibido desde hace décadas que sigue en el medio ambiente">DDT</span> y los <span class="term" title="Policlorobifenilos: compuestos industriales tóxicos">PCB</span> y los liberan dentro de los animales que se los comen.</p>
+    <p><strong>Impacto económico y social.</strong> La pesca se resiente porque se dañan los bancos de peces y se ensucian las redes. El turismo también, porque las playas y costas pierden su atractivo.</p>
+  </div>
+  <div class="quiz" data-quiz="4"></div>
+</section>
+
+<!-- 5 -->
+<section class="topic" id="t5" data-title="Futuro">
+  <div class="topic-head"><span class="num">APARTADO 5</span><h2>¿Qué nos espera en el futuro?</h2></div>
+  <div class="body">
+    <p>El <strong>Foro Económico Mundial</strong> predice que, si seguimos así, <span class="hl">en 2050 habrá más plástico que peces en los océanos</span>. Suena exagerado, pero tiene base científica. Haz las cuentas:</p>
+    <div class="calc">
+      <div class="card"><span class="big">400</span><p>millones de toneladas de plástico producidas cada año</p></div>
+      <div class="card"><span class="big">× 10 %</span><p>acaba en el mar</p></div>
+      <div class="card"><span class="big">= 40</span><p>millones de toneladas al mar <strong>cada año</strong></p></div>
+    </div>
+    <div class="easy">
+      <span class="tag">Dicho de forma sencilla</span>
+      <p>Si llenas un vaso con un grifo que gotea, da igual que cada gota sea pequeña: si nunca cierras el grifo, acabará rebosando. Cada año entra más plástico del que sale, así que la cantidad no para de crecer.</p>
+    </div>
+    <p>La pregunta no es si la predicción es realista, sino si estamos dispuestos a demostrar que es falsa cambiando nuestros hábitos.</p>
+  </div>
+  <div class="quiz" data-quiz="5"></div>
+</section>
+
+<!-- 6 -->
+<section class="topic" id="t6" data-title="Responsables">
+  <div class="topic-head"><span class="num">APARTADO 6</span><h2>¿Quién tiene la responsabilidad?</h2></div>
+  <div class="body">
+    <p>El problema tiene varios responsables, y cada uno tiene su parte:</p>
+    <div class="who">
+      <div class="card"><h4>Consumidores</h4><p>Responsables de sus hábitos de compra: la cultura de «usar y tirar» y los plásticos de un solo uso.</p><p><strong>Qué pueden hacer:</strong> llevar botella y bolsa reutilizables, elegir productos a granel o con menos envase, separar bien los residuos en los contenedores y no tirar toallitas al váter.</p></div>
+      <div class="card"><h4>Empresas</h4><p>Deciden cómo se fabrican los productos y sus envases.</p><p><strong>Qué pueden hacer:</strong> diseñar envases recargables, usar plástico reciclado, sustituir el plástico por materiales reutilizables y fabricar productos que se puedan reparar.</p></div>
+      <div class="card"><h4>Gobiernos</h4><p>Ponen las normas que todos deben cumplir.</p><p><strong>Qué pueden hacer:</strong> prohibir plásticos de un solo uso, poner impuestos a los envases que no se reciclan, mejorar la recogida de residuos y cooperar con otros países.</p></div>
+      <div class="card"><h4>Gestores de residuos</h4><p>Se encargan de lo que pasa con la basura después de tirarla.</p><p><strong>Qué pueden hacer:</strong> reciclar de forma eficiente, controlar los vertederos para que no lleguen residuos a ríos y costas y mejorar los filtros de las depuradoras.</p></div>
+    </div>
+    <div class="easy">
+      <span class="tag">Dicho de forma sencilla</span>
+      <p>Es como mantener limpia la clase: tú no tiras papeles al suelo (consumidor), el centro pone papeleras de colores (gobierno), el fabricante de material escolar usa menos envoltorio (empresa) y el personal de limpieza separa bien los residuos (gestor). Si falla uno, la clase acaba sucia.</p>
+    </div>
+    <p>Es un <strong>problema global que necesita una respuesta global y coordinada</strong>.</p>
+  </div>
+  <div class="quiz" data-quiz="6"></div>
+</section>
+
+<!-- 7 -->
+<section class="topic" id="t7" data-title="Soluciones">
+  <div class="topic-head"><span class="num">APARTADO 7</span><h2>Soluciones y proyectos en marcha</h2></div>
+  <div class="body">
+    <div class="cards3">
+      <div class="card"><span class="big">3 %</span><h4>The Ocean Cleanup</h4><p>Usa grandes barreras flotantes que recogen el plástico de la superficie. Funciona, pero solo puede recoger alrededor del 3 % del total.</p></div>
+      <div class="card"><span class="big">↻</span><h4>Parley for the Oceans</h4><p>Convierte plástico recogido del mar en ropa deportiva. Es un ejemplo de economía circular.</p></div>
+      <div class="card"><span class="big">60+</span><h4>Prohibiciones</h4><p>Más de 60 países han prohibido las bolsas de plástico. España lo hizo en 2021.</p></div>
+    </div>
+    <p><strong>La economía circular.</strong> Consiste en diseñar los productos para que se puedan <strong>reutilizar, reparar o reciclar</strong> una y otra vez. En lugar de «usar y tirar», «usar y volver a usar».</p>
+    <p><strong>¿Cómo ayuda contra el plástico en el mar?</strong> Si un producto o envase se reutiliza o se recicla, <strong>nunca llega a convertirse en basura</strong>, así que no puede acabar en un río ni en el océano. Además, cuanto más plástico reciclado se usa, menos plástico nuevo hay que fabricar. Es atacar el problema en su origen: en vez de recoger lo que ya está en el mar, se evita que llegue.</p>
+    <div class="easy">
+      <span class="tag">Dicho de forma sencilla</span>
+      <p>Un móvil con piezas intercambiables: si se te rompe la pantalla, cambias solo la pantalla en vez de tirar el aparato entero. Lo mismo que hacemos en el taller de Tecnología cuando reaprovechamos piezas de un proyecto para el siguiente.</p>
+    </div>
+    <div class="panel">
+      <h3>¿Limpiar o prevenir?</h3>
+      <p>Si el baño se inunda porque el grifo está abierto, ¿qué haces primero: coger la fregona o cerrar el grifo? Limpiar el océano es la fregona. Producir y tirar menos plástico es cerrar el grifo.</p>
+      <p><strong>La clave no está solo en limpiar, sino en prevenir.</strong></p>
+    </div>
+  </div>
+  <div class="quiz" data-quiz="7"></div>
+</section>
+
+<!-- 8 -->
+<section class="topic" id="t8" data-title="Tú">
+  <div class="topic-head"><span class="num">APARTADO 8</span><h2>Lo que tú puedes hacer</h2></div>
+  <div class="body">
+    <p>La concienciación crece, pero todavía no se le da la importancia urgente que merece. El problema no es tan grande como para que no podamos hacer nada, pero sí lo bastante grave como para que cada acción cuente.</p>
+    <div class="panel">
+      <h3>Mi compromiso</h3>
+      <p class="hint">Marca lo que ya haces o lo que te comprometes a hacer.</p>
+      <div style="display:grid;gap:8px" id="pledges"></div>
+      <p id="pledgeMsg" class="hint" aria-live="polite"></p>
+    </div>
+  </div>
+  <div class="quiz" data-quiz="8"></div>
+</section>
+
+<div class="final" id="final">
+  <span class="eyebrow">Resultado</span>
+  <span class="big mono" id="finalScore">0/30</span>
+  <p id="finalMsg">Responde los mini tests de cada apartado para ver tu resultado.</p>
+  <button type="button" id="resetAll">Empezar de nuevo</button>
+</div>
+</main>
+<footer class="wrap">Material didáctico · Tecnología y Digitalización · La Isla de Plástico</footer>
+
+<script>
+/* ===== DATOS DE LOS TESTS ===== */
+const QUIZ = {
+ 1:[
+  {q:"¿Por qué el nombre «isla de plástico» es engañoso?",o:["Porque está hundida a mil metros de profundidad","Porque es plástico disperso en el agua, como una sopa, no una superficie sólida","Porque en realidad es muy pequeña"],a:1,e:"No se puede caminar sobre ella: es una zona enorme con plástico flotante disperso, por eso se habla de «sopa de plástico»."},
+  {q:"¿Qué porcentaje de las partículas son microplásticos?",o:["El 20 %","El 50 %","El 94 %"],a:2,e:"El 94 % son trozos de menos de 5 mm."},
+  {q:"La famosa foto de montañas de botellas flotando se tomó en…",o:["Un estuario de Manila (Filipinas)","El centro del océano Pacífico","Una playa de Gran Canaria"],a:0,e:"Es una imagen real de contaminación, pero de un estuario junto a la costa, no de la mancha del Pacífico."}
+ ],
+ 2:[
+  {q:"¿Cuántos grandes giros oceánicos acumulan plástico, contando el del Pacífico Norte?",o:["2","5","10"],a:1,e:"Pacífico Norte, Pacífico Sur, Atlántico Norte, Atlántico Sur e Índico."},
+  {q:"¿Cuál de estos NO es uno de los grandes giros oceánicos?",o:["Giro del océano Índico","Giro del Atlántico Sur","Giro del Mediterráneo"],a:2,e:"El Mediterráneo es un mar con mucho plástico, pero no es uno de los cinco grandes giros."},
+  {q:"¿Por qué las otras acumulaciones son menos conocidas?",o:["Porque no tienen plástico","Porque son más pequeñas o se han estudiado menos","Porque están congeladas"],a:1,e:"Existen y tienen plástico, pero son más pequeñas o están en zonas menos estudiadas."},
+  {q:"¿Qué tres factores forman un giro oceánico?",o:["Las mareas, la Luna y la temperatura","Los vientos, la rotación de la Tierra y los continentes","Los barcos, los ríos y la lluvia"],a:1,e:"El viento empuja el agua, la rotación de la Tierra la desvía (efecto Coriolis) y los continentes la obligan a dar la vuelta."},
+  {q:"¿Por qué el océano Índico solo tiene un giro y el Pacífico tiene dos?",o:["Porque el Índico está casi entero en el hemisferio sur","Porque en el Índico no sopla el viento","Porque el Índico es más profundo"],a:0,e:"Hay un giro por cada gran océano y hemisferio. El Pacífico y el Atlántico ocupan los dos hemisferios; el Índico, casi solo el sur."}
+ ],
+ 3:[
+  {q:"¿De dónde procede la mayor parte del plástico del océano?",o:["De la actividad marítima (80 %)","De fuentes terrestres (80 %)","Mitad y mitad"],a:1,e:"El 80 % llega desde tierra: ríos, alcantarillas y vertederos."},
+  {q:"¿Qué hace un giro oceánico con el plástico?",o:["Lo hunde hasta el fondo","Lo atrapa y lo mantiene girando durante años, como un remolino","Lo empuja hacia las playas"],a:1,e:"Actúa como una cinta transportadora gigante que concentra todo lo que flota."},
+  {q:"¿Qué es la fotodegradación?",o:["Los rayos UV rompen el plástico en trozos cada vez más pequeños, sin hacerlo desaparecer","Las bacterias se comen el plástico","El agua salada disuelve el plástico"],a:0,e:"El plástico no se biodegrada: el sol lo fragmenta en microplásticos que siguen ahí."},
+  {q:"¿Por qué un microplástico es más peligroso que una botella entera?",o:["Porque pesa más","Porque es imposible de recoger, lo come cualquier animal y absorbe tóxicos","Porque se hunde y desaparece"],a:1,e:"Una botella se puede sacar con una red; millones de trocitos invisibles no, y además entran en la cadena alimentaria cargados de tóxicos."},
+  {q:"Lavar ropa de poliéster en la lavadora es un ejemplo de plástico que llega al mar desde…",o:["Fuentes terrestres","La actividad marítima","Los giros oceánicos"],a:0,e:"Las microfibras salen por el desagüe de casa, pasan por la depuradora y llegan a ríos y mares: es una fuente terrestre."}
+ ],
+ 4:[
+  {q:"Las tortugas marinas confunden las bolsas de plástico con…",o:["Algas","Medusas","Peces pequeños"],a:1,e:"Una bolsa flotando se parece mucho a una medusa, que es parte de su dieta."},
+  {q:"¿Cuál es el orden correcto de la bioacumulación?",o:["Peces grandes → plancton → humanos","Plancton → peces pequeños → peces grandes → humanos","Humanos → peces → plancton"],a:1,e:"Empieza en la base de la cadena (plancton) y sube hasta nosotros."},
+  {q:"¿Qué son las «redes fantasma»?",o:["Redes de pesca abandonadas que siguen atrapando animales","Redes invisibles de las corrientes","Redes que usa The Ocean Cleanup"],a:0,e:"Se quedan a la deriva y atrapan focas, delfines y aves."}
+ ],
+ 5:[
+  {q:"¿Qué predice el Foro Económico Mundial para 2050?",o:["Que el plástico habrá desaparecido","Que habrá más plástico que peces en los océanos","Que los peces comerán plástico sin problemas"],a:1,e:"Si seguimos al ritmo actual."},
+  {q:"¿Cuánto plástico se produce al año en el mundo?",o:["4 millones de toneladas","40 millones de toneladas","400 millones de toneladas"],a:2,e:"400 millones de toneladas cada año."},
+  {q:"Si el 10 % de 400 millones de toneladas acaba en el mar, ¿cuánto es?",o:["4 millones de toneladas","40 millones de toneladas","100 millones de toneladas"],a:1,e:"400 × 0,10 = 40 millones de toneladas al año."}
+ ],
+ 6:[
+  {q:"¿Quién puede aprobar leyes que prohíban los plásticos de un solo uso?",o:["Los consumidores","Los gobiernos","Los gestores de residuos"],a:1,e:"Legislar es tarea de los gobiernos."},
+  {q:"Diseñar una botella de champú recargable es responsabilidad sobre todo de…",o:["Las empresas","Los gestores de residuos","Nadie"],a:0,e:"Las empresas deciden cómo se diseñan los productos y sus envases."},
+  {q:"Comprar agua embotellada cada día en vez de llevar botella reutilizable es un ejemplo de…",o:["Economía circular","Cultura de «usar y tirar»","Gestión de residuos"],a:1,e:"Es un hábito de consumo de un solo uso."},
+  {q:"Mejorar los filtros de las depuradoras para retener microplásticos es una tarea de…",o:["Los gestores de residuos","Los consumidores","Las empresas de ropa deportiva"],a:0,e:"Los gestores se ocupan de los residuos y las aguas después de que los tiramos."}
+ ],
+ 7:[
+  {q:"¿Qué porcentaje del plástico total puede recoger The Ocean Cleanup?",o:["Alrededor del 3 %","Alrededor del 50 %","Todo"],a:0,e:"Es útil, pero limpiar no basta: hay que prevenir."},
+  {q:"Convertir plástico del mar en zapatillas es un ejemplo de…",o:["Fotodegradación","Economía circular","Bioacumulación"],a:1,e:"Un residuo vuelve a ser un producto útil."},
+  {q:"Según el texto, ¿dónde está la clave para resolver el problema?",o:["Solo en limpiar los océanos","En prevenir, no solo en limpiar","En esperar a que el plástico se degrade"],a:1,e:"Primero hay que cerrar el grifo."},
+  {q:"¿Por qué la economía circular reduce el plástico que llega al mar?",o:["Porque limpia los océanos con barcos","Porque si un producto se reutiliza o recicla, nunca se convierte en basura","Porque hace que el plástico se biodegrade"],a:1,e:"Ataca el problema en su origen: lo que no se tira no puede acabar en el océano."}
+ ],
+ 8:[
+  {q:"¿Qué parte del plástico que usamos es de un solo uso?",o:["El 10 %","El 50 %","El 90 %"],a:1,e:"La mitad: por eso llevar botella reutilizable ayuda tanto."},
+  {q:"Una bolsa de tela usada 200 veces evita…",o:["20 bolsas de plástico","300 bolsas de plástico","1.000 bolsas de plástico"],a:1,e:"Unas 300 bolsas de plástico."},
+  {q:"En una hora de limpieza de playa, cada persona recoge aproximadamente…",o:["Media bolsa de basura","Cinco bolsas","Una botella"],a:0,e:"Media bolsa por persona y hora: entre toda una clase, es muchísimo."}
+ ]
+};
+const TOTAL = Object.values(QUIZ).reduce((s,a)=>s+a.length,0);
+
+/* ===== ESTADO (localStorage protegido) ===== */
+const KEY="islaPlastico.v1";
+let state={answers:{},pledges:[]};
+try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&s.answers)state=s;}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+
+/* ===== TESTS ===== */
+const L="ABC";
+function renderQuiz(box){
+  const id=box.dataset.quiz, qs=QUIZ[id];
+  box.innerHTML=`<div class="quiz-head"><h3>Mini test</h3><span class="mono" data-s></span></div><div class="qs"></div><button class="retry" type="button" hidden>Repetir test</button>`;
+  const wrap=box.querySelector(".qs");
+  qs.forEach((item,i)=>{
+    const k=id+"-"+i, given=state.answers[k];
+    const div=document.createElement("div");div.className="q";
+    div.innerHTML=`<p class="stem">${i+1}. ${item.q}</p><div class="opts"></div><div class="fb" hidden></div>`;
+    const opts=div.querySelector(".opts"), fb=div.querySelector(".fb");
+    item.o.forEach((t,j)=>{
+      const b=document.createElement("button");b.type="button";b.className="opt";
+      b.innerHTML=`<span class="l">${L[j]}</span><span>${t}</span>`;
+      b.addEventListener("click",()=>{state.answers[k]=j;save();show();update();});
+      opts.appendChild(b);
+    });
+    function show(){
+      const g=state.answers[k]; if(g===undefined)return;
+      [...opts.children].forEach((b,j)=>{b.disabled=true;if(j===item.a)b.classList.add("right");else if(j===g)b.classList.add("wrong");});
+      const ok=g===item.a; fb.hidden=false; fb.className="fb "+(ok?"ok":"ko");
+      fb.innerHTML=`<b>${ok?"¡Correcto!":"No es esa. La correcta es la "+L[item.a]+"."}</b>${item.e}`;
+    }
+    if(given!==undefined)show();
+    wrap.appendChild(div);
+  });
+  box.querySelector(".retry").addEventListener("click",()=>{
+    qs.forEach((_,i)=>delete state.answers[id+"-"+i]);save();renderQuiz(box);update();
+  });
+}
+function sectionStats(id){
+  let done=0,ok=0;QUIZ[id].forEach((it,i)=>{const g=state.answers[id+"-"+i];if(g!==undefined){done++;if(g===it.a)ok++;}});
+  return{done,ok,n:QUIZ[id].length};
+}
+function update(){
+  let ok=0,done=0;
+  Object.keys(QUIZ).forEach(id=>{
+    const s=sectionStats(id);ok+=s.ok;done+=s.done;
+    const box=document.querySelector(`[data-quiz="${id}"]`);
+    box.querySelector("[data-s]").textContent=s.done?`${s.ok}/${s.n} aciertos`:`${s.n} preguntas`;
+    box.querySelector(".retry").hidden=s.done<s.n;
+    const chip=document.getElementById("chip"+id);
+    chip.classList.toggle("done",s.done===s.n);chip.classList.toggle("partial",s.done>0&&s.done<s.n);
+  });
+  document.getElementById("score").textContent=`${ok}/${TOTAL}`;
+  document.getElementById("finalScore").textContent=`${ok}/${TOTAL}`;
+  const m=document.getElementById("finalMsg");
+  if(done<TOTAL)m.textContent=`Llevas ${done} de ${TOTAL} preguntas respondidas. Completa todos los mini tests para ver tu resultado final.`;
+  else if(ok>=Math.round(TOTAL*.85))m.textContent="¡Experto/a en océanos! Dominas el tema: ahora toca contárselo a tu familia.";
+  else if(ok>=Math.round(TOTAL*.6))m.textContent="¡Buen trabajo! Repasa los apartados donde has fallado y repite esos tests.";
+  else m.textContent="Vas por buen camino, pero conviene releer los apartados y repetir los tests. ¡Tú puedes!";
+}
+
+/* chips nav */
+const chips=document.getElementById("chips");
+document.querySelectorAll("section.topic").forEach((s,i)=>{
+  const a=document.createElement("a");a.href="#"+s.id;a.className="chip";a.id="chip"+(i+1);a.textContent=i+1;a.title=s.dataset.title;
+  chips.appendChild(a);
+});
+document.querySelectorAll("[data-quiz]").forEach(renderQuiz);
+
+document.getElementById("resetAll").addEventListener("click",()=>{
+  state={answers:{},pledges:[]};save();
+  document.querySelectorAll("[data-quiz]").forEach(renderQuiz);renderPledges();update();
+  document.getElementById("t1").scrollIntoView();
+});
+
+/* ===== MITO / REALIDAD ===== */
+document.querySelectorAll(".flip").forEach(f=>f.addEventListener("click",()=>{
+  f.classList.toggle("open");
+  f.querySelector(".badge").textContent=f.classList.contains("open")?(f.classList.contains("myth")?"MITO":"REALIDAD"):"¿?";
+}));
+
+/* ===== GIROS ===== */
+const GY=[
+ {n:"Pacífico Norte",x:420,y:140,r:62,s:false,t:"La Gran Mancha de Basura del Pacífico: la más grande y estudiada. Gira en el sentido de las agujas del reloj, entre California y Hawái."},
+ {n:"Pacífico Sur",x:440,y:295,r:46,s:true,t:"Frente a las costas de Chile y Perú. Más pequeña y menos estudiada, pero también acumula plástico."},
+ {n:"Atlántico Norte",x:700,y:140,r:44,s:false,t:"Entre América del Norte y Europa. Aquí puede acabar el plástico que sale de los ríos de la península ibérica."},
+ {n:"Atlántico Sur",x:710,y:295,r:40,s:true,t:"Entre América del Sur y África. Menos conocida porque está en una zona con pocas investigaciones."},
+ {n:"Índico",x:130,y:285,r:44,s:true,t:"Entre África, Asia y Oceanía. Recibe residuos de algunos de los países más poblados del mundo."}
+];
+const g=document.getElementById("gyres"),info=document.getElementById("gyreInfo"),NS="http://www.w3.org/2000/svg";
+GY.forEach(d=>{
+  const el=document.createElementNS(NS,"g");el.setAttribute("class","gyre"+(d.s?" south":""));el.setAttribute("tabindex","0");el.setAttribute("role","button");el.setAttribute("aria-label","Giro "+d.n);
+  const big=d.n==="Pacífico Norte";
+  const arc=`M ${d.x+d.r} ${d.y} A ${d.r} ${d.r} 0 1 1 ${d.x} ${d.y-d.r}`;
+  el.innerHTML=`<circle class="ring" cx="${d.x}" cy="${d.y}" r="${d.r}" fill="${big?'var(--buoy-soft)':'var(--surface)'}" fill-opacity=".85" stroke="${big?'var(--buoy)':'var(--sea)'}" stroke-width="2.5"/>
+   <g class="spin"><path d="${arc}" fill="none" stroke="${big?'var(--buoy)':'var(--sea)'}" stroke-width="3" stroke-dasharray="10 8" transform="translate(0 0)"/>
+   <circle cx="${d.x}" cy="${d.y-d.r}" r="0" fill="none"/>
+   <path d="M ${d.x} ${d.y-d.r} l ${d.s?10:-10} -7 l 0 14 z" fill="${big?'var(--buoy)':'var(--sea)'}" transform="${d.s?`scale(-1 1) translate(${-2*d.x} 0)`:''}"/></g>
+   <text x="${d.x}" y="${d.y+5}" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="700" font-size="${big?15:13}" fill="var(--fg)">${d.n}</text>`;
+  const pick=()=>{g.querySelectorAll(".gyre").forEach(x=>x.classList.remove("sel"));el.classList.add("sel");info.innerHTML=`<strong>Giro del ${d.n}.</strong> ${d.t}`;};
+  el.addEventListener("click",pick);el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();pick();}});
+  g.appendChild(el);
+});
+
+/* ===== TOKENS PARA CANVAS ===== */
+function tok(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+
+/* ===== FOTODEGRADACIÓN ===== */
+const dc=document.getElementById("degCanvas"),dr=document.getElementById("degYears");
+function rnd(seed){let s=seed;return()=>{s=(s*16807)%2147483647;return(s-1)/2147483646;};}
+function drawDeg(){
+  const y=+dr.value, dpr=window.devicePixelRatio||1, w=dc.clientWidth, h=dc.clientHeight;
+  dc.width=w*dpr;dc.height=h*dpr;const c=dc.getContext("2d");c.scale(dpr,dpr);c.clearRect(0,0,w,h);
+  const n=y===0?1:Math.min(1500,Math.round(Math.pow(2,y/30)));
+  const sizeCm=25/Math.sqrt(n*4)*(y===0?2:1);
+  document.getElementById("degY").textContent=y;
+  document.getElementById("degN").textContent=n>=1500?"miles":n.toLocaleString("es-ES");
+  const mm=sizeCm*10;
+  document.getElementById("degS").textContent=mm>=10?sizeCm.toFixed(1).replace(".",",")+" cm":(mm<1?"menos de 1 mm":mm.toFixed(1).replace(".",",")+" mm");
+  const tag=document.getElementById("degTag");
+  tag.innerHTML=mm<5?`<strong style="color:var(--bad)">Ya son microplásticos (&lt; 5 mm)</strong>`:"";
+  const col=tok("--sea"), col2=tok("--buoy");
+  if(y===0){ // botella
+    c.fillStyle=col;const bx=w/2-22,by=h/2-75;
+    c.beginPath();c.roundRect(bx+14,by,16,18,3);c.fill();
+    c.beginPath();c.roundRect(bx,by+20,44,130,12);c.fill();
+    c.fillStyle=col2;c.fillRect(bx,by+60,44,30);return;
+  }
+  const r=rnd(7), side=Math.max(1.6,Math.min(60,90/Math.sqrt(n)));
+  for(let i=0;i<n;i++){
+    const x=r()*(w-side)+side/2,yy=r()*(h-side)+side/2,rot=r()*6.28;
+    c.save();c.translate(x,yy);c.rotate(rot);c.fillStyle=r()<.25?col2:col;c.globalAlpha=.85;
+    c.fillRect(-side/2,-side/2*(.5+r()*.6),side,side*(.5+r()*.6));c.restore();
+  }
+}
+dr.addEventListener("input",drawDeg);window.addEventListener("resize",drawDeg);
+
+/* ===== CADENA TRÓFICA ===== */
+const CH=[
+ {n:"Plancton",d:"·",t:"El plancton, la base de la cadena alimentaria marina, se traga los microplásticos confundiéndolos con alimento.",svg:'<circle cx="22" cy="22" r="8" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="10" cy="12" r="4" fill="currentColor"/><circle cx="34" cy="32" r="5" fill="none" stroke="currentColor" stroke-width="2.5"/>'},
+ {n:"Peces pequeños",d:"··",t:"Una sardina come miles de organismos de plancton… y se queda con todo su plástico.",svg:'<path d="M6 22 C14 12 28 12 34 22 C28 32 14 32 6 22 Z M34 22 L42 15 L42 29 Z" fill="currentColor"/>'},
+ {n:"Peces grandes",d:"···",t:"Un atún come cientos de peces pequeños. Acumula todavía más plástico y más tóxicos.",svg:'<path d="M2 22 C10 8 30 8 36 22 C30 36 10 36 2 22 Z M36 22 L44 12 L44 32 Z" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="var(--surface-2)"/>'},
+ {n:"Nosotros",d:"····",t:"Llega a tu plato cuando comes pescado o marisco. El plástico que tiramos vuelve a nosotros.",svg:'<circle cx="22" cy="12" r="7" fill="currentColor"/><path d="M8 42 C8 28 36 28 36 42 Z" fill="currentColor"/>'}
+];
+const chain=document.getElementById("chain"),ctx=document.getElementById("chainTxt");let step=0;
+CH.forEach((d,i)=>{
+  const b=document.createElement("button");b.type="button";b.className="link";
+  b.innerHTML=`<svg viewBox="0 0 44 44" aria-hidden="true" style="color:var(--sea)">${d.svg}</svg><span>${d.n}</span><span class="dots"></span>`;
+  b.addEventListener("click",()=>{
+    if(i>step){ctx.textContent="¡Sigue el orden! Toca primero: "+CH[step].n+".";return;}
+    [...chain.children].forEach((x,j)=>{x.classList.toggle("on",j<=i);x.querySelector(".dots").textContent=j<=i?CH[j].d:"";});
+    ctx.textContent=d.t; step=Math.max(step,Math.min(i+1,CH.length-1));
+  });
+  chain.appendChild(b);
+});
+
+/* ===== COMPROMISO ===== */
+const PL=[
+ ["Llevo siempre una botella reutilizable","El 50 % del plástico que usamos es de un solo uso."],
+ ["Reutilizo bolsas de tela","Una bolsa de tela usada 200 veces evita 300 bolsas de plástico."],
+ ["Rechazo plásticos innecesarios","Pajitas, cubiertos de plástico, envases desechables…"],
+ ["Uso alternativas sostenibles","Botellas de acero inoxidable, envases compostables, fiambrera para el almuerzo."],
+ ["Participaré en una limpieza de playa o río","En una hora, cada persona recoge media bolsa de basura."]
+];
+const pw=document.getElementById("pledges");
+function renderPledges(){
+  pw.innerHTML="";
+  PL.forEach((p,i)=>{
+    const l=document.createElement("label");l.className="check";
+    l.innerHTML=`<input type="checkbox" id="pl${i}" ${state.pledges.includes(i)?"checked":""}><span><strong>${p[0]}</strong><small>${p[1]}</small></span>`;
+    l.querySelector("input").addEventListener("change",e=>{
+      state.pledges=state.pledges.filter(x=>x!==i);if(e.target.checked)state.pledges.push(i);save();pledgeMsg();
+    });
+    pw.appendChild(l);
+  });
+  pledgeMsg();
+}
+function pledgeMsg(){
+  const n=state.pledges.length,m=document.getElementById("pledgeMsg");
+  m.textContent=n===0?"Aún no has marcado ninguno.":n===PL.length?"¡Los cinco! Si toda la clase hiciera lo mismo, el efecto se multiplicaría por 30.":`Has marcado ${n} de ${PL.length}. Cada acción cuenta.`;
+}
+renderPledges();
+
+/* ===== HERO: partículas girando en un giro ===== */
+(function(){
+  const cv=document.getElementById("heroCanvas"),c=cv.getContext("2d");
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let w,h,P=[];
+  function size(){const d=window.devicePixelRatio||1;w=cv.clientWidth;h=cv.clientHeight;cv.width=w*d;cv.height=h*d;c.setTransform(d,0,0,d,0,0);}
+  function init(){size();P=[];const r=rnd(3);for(let i=0;i<260;i++){P.push({a:r()*6.28,d:Math.pow(r(),.6)*Math.max(w,h)*.6,s:r()*2.2+.6,v:(r()*.5+.5)*.0016,o:r()*.5+.25,k:r()<.18});}}
+  function frame(){
+    c.clearRect(0,0,w,h);const cx=w*.72,cy=h*.5,buoy=tok("--buoy");
+    P.forEach(p=>{
+      if(!reduce)p.a+=p.v*(300/(p.d+120));
+      const x=cx+Math.cos(p.a)*p.d,y=cy+Math.sin(p.a)*p.d*.55;
+      c.globalAlpha=p.o;c.fillStyle=p.k?buoy:"#bfe3e6";c.fillRect(x,y,p.s,p.s);
+    });
+    c.globalAlpha=1;if(!reduce)requestAnimationFrame(frame);
+  }
+  init();frame();window.addEventListener("resize",()=>{init();if(reduce)frame();});
+})();
+
+update();drawDeg();
+</script>
+</body>
+</html>
